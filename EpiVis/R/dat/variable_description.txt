@@ -1,0 +1,6 @@
+PROVINCE: provinces in China
+CURR_CONF: # current confirmed cases
+TOT_CONF: # total confirmed cases
+TOT_RECOV: # total recovered cases
+TOT_DEATH: # total death
+HOSP: # designated hospitals

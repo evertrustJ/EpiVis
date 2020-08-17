@@ -1,0 +1,121 @@
+---
+title: "China Demo"
+author: "James"
+date: "4/15/2020"
+urlcolor: blue
+link-citations: yes
+citecolor: blue
+linkcolor: blue
+bibliography: references.bib
+biblio-style: apalike-url
+output:
+  pdf_document:
+    number_sections: true
+    citation_package: natbib
+---
+
+# Approach 1: Use the low-level function epi_grid, epi_bayesian_krig
+
+## Load the data
+
+We first load the data and converge the data set into a format that our function can work with. This is done by using epi_converge, with parameters x, y, case, population, map.
+
+```{r, warning=FALSE, label="loading_data"}
+library(EpiVis)
+covid19_china_province <- read.csv("provinces_test.csv")
+china_covid <- epi_converge(x=covid19_china_province$longitudes, 
+                            y=covid19_china_province$latitudes,
+                            case=covid19_china_province$total_con,
+                            population=covid19_china_province$populations,
+                            map='china')
+```
+
+## Visualize the grid
+
+We then proceed to form a grid at which we would interpolate (or estimate) the rate at.            
+
+```{r, echo=FALSE, label="Figure 1"}
+china_grid <- epi_grid(china_covid, 170) # Want 170 points in the rectangle
+                                         #  but only part of them would be in
+                                         #  the map of china.
+plot(china_grid, xlab="Longitude", ylab="Latitude", pch=15)
+```
+
+## Estimate rates at the grid location
+
+We take an MCMC approach to estimate rates at the new locations on the grid. To be precise, we would model the rate as a Gaussian Process with constant mean and spherical covariance.
+
+      
+It should be noted that the estimated rate is multipled by 10000 to avoid machine precision problems; as a result, the estimated rate is the rate per 10000 people.         
+
+```{r, warning=FALSE, label = "Figure 2", echo=FALSE}
+require(rstan)
+options(mc.cores = parallel::detectCores())
+#Sys.setenv(LOCAL_CPPFLAGS = '-march=corei7 -mtune=corei7')
+rstan_options(auto_write = TRUE)
+
+fit <- epi_bayesian_krig(china_covid, china_grid, mod='krig', chain=4, iter=400)
+## This saves a "spatial_stan.Rda" file locally automatically, 
+##   as it is a side effect by epi_bayesian_krig.
+
+r <- extract(fit, pars="rate_pred")
+
+rate_pred <- NULL
+
+library(maps)
+for (i in 1:ncol(r$rate_pred)){
+  rate_pred[i] = mean(r$rate_pred[401:800,i])
+}
+
+grid_pred <- cbind(china_grid$x, china_grid$y, rate_pred)
+grid_pred <- grid_pred[order(rate_pred),]
+
+
+## Some color of choice
+col=c(rep(heat.colors(4)[4], nrow(grid_pred)/4), 
+      rep(heat.colors(4)[3], nrow(grid_pred)/4), 
+      rep(heat.colors(4)[2], nrow(grid_pred)/4), 
+      rep(heat.colors(4)[1], nrow(grid_pred)/4))
+
+china_covid <- china_covid[order(china_covid$rate),]
+
+col2=c(rep(heat.colors(4)[4],8), rep(heat.colors(4)[3],8), 
+          rep(heat.colors(4)[2],8), rep(heat.colors(4)[1], 8))
+
+map('world','china')
+points(grid_pred[,1], grid_pred[,2], col=col, pch=15, cex=1.5)
+title(main=expression('Rate of Disease per 10000 people'),  xlab="Longitude", ylab="Latitude")
+
+map('world','china')
+points(china_covid$x, china_covid$y, col=col2, pch=15, cex=1.5)
+title(main=expression('Mock Data Collected'),  xlab="Longitude", ylab="Latitude")
+```
+
+# Approach 2: Use the high-level function epi_heatmap
+
+```{r, warning=FALSE, label="Figure 3", echo=FALSE}
+library(EpiVis)
+covid19_china_province <- read.csv("provinces_test.csv")
+china_covid <- epi_converge(x=covid19_china_province$longitudes, 
+                            y=covid19_china_province$latitudes,
+                            case=covid19_china_province$total_con,
+                            population=covid19_china_province$populations,
+                            map='china')
+epi_heatmap(epi=china_covid, pts=170)
+```
+
+\appendix
+
+# R Code
+
+```{r, ref.lab="Figure 1", eval=FALSE}
+
+```
+
+```{r, ref.lab="Figure 2", eval=FALSE}
+
+```
+
+```{r, ref.lab="Figure 3", eval=FALSE}
+
+```
