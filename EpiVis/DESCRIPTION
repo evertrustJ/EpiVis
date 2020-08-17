@@ -13,7 +13,7 @@ Authors@R:
 Description: Create visualization of epidemic data by interpolating heatmap with Bayesian Kriging.
 License: GPL-2
 Encoding: UTF-8
-Maintaner: James Zhong & James Ni
+Maintaner: James Ni
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.0.2
 Imports: rstan, graphics, grDevices, sp, stats, maps, mniw
