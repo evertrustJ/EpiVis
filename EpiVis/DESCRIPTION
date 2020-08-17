@@ -1,5 +1,5 @@
 Package: EpiVis
-Title: Better Epidemic Data Visualization
+Title: Epidemic Data Visualization
 Version: 0.0.0.9000
 Authors@R: 
     c(person(given = "James",
